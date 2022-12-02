@@ -1,6 +1,7 @@
 #![feature(test)]
-extern crate test;
+
 mod jobs;
+mod bench;
 
 fn main() {
     run("day02");
@@ -15,16 +16,3 @@ fn run(name: &str) {
         .proc)()
 }
 
-#[allow(dead_code)]
-fn run_seq() {
-    jobs::all().iter().for_each(|job| {
-        println!("Running {}\n-------------", job.name);
-        (job.proc)();
-        println!();
-    })
-}
-
-#[bench]
-fn bench_all_seq(b: &mut test::Bencher) {
-    b.iter(|| run_seq());
-}
