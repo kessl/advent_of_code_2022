@@ -3,11 +3,11 @@ extern crate test;
 mod jobs;
 
 fn main() {
-    run("day01");
+    run("day02");
 }
 
 fn run(name: &str) {
-    println!("Running {name}");
+    println!("Running {name}\n-------------");
     (jobs::all()
         .iter()
         .find(|job| job.name == name)
