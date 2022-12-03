@@ -12,9 +12,9 @@ pub fn main() {
     totals.sort_unstable();
 
     let max = totals.iter().rev().next().unwrap();
-    println!("Day01a: {max}");
+    println!("day01a: {max}");
 
     let top_3_sum: i32 = totals.iter().rev().take(3).sum();
-    println!("DayO1b: {top_3_sum}");
+    println!("dayO1b: {top_3_sum}");
 }
 

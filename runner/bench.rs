@@ -29,5 +29,6 @@ macro_rules! bench_individual {
 
 bench_individual!(
     day01, "day01",
-    day02, "day02"
+    day02, "day02",
+    day03, "day03"
 );
