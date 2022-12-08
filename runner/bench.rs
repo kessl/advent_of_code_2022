@@ -55,5 +55,5 @@ macro_rules! bench_individual {
 // );
 
 bench_individual!(
-    day06, "day06"
+    day06, "day07"
 );
