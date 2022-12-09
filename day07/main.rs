@@ -1,5 +1,3 @@
-// TODO: clean this mess up
-
 struct Arena {
     nodes: Vec<Node>,
 }
@@ -31,27 +29,6 @@ impl Arena {
     }
 }
 
-fn print(arena: &Arena, this_node: &Node, level: usize) -> String {
-    let mut str = format!(
-        "{}├─ {} {}\n",
-        "│ ".repeat(level),
-        this_node.name,
-        this_node.size.unwrap_or(0)
-    );
-    for node_id in this_node.children.iter() {
-        let node = arena.get(*node_id);
-        str.push_str(&print(arena, node, level + 1));
-    }
-    str
-}
-
-impl std::fmt::Display for Arena {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let root = &self.nodes[0];
-        write!(f, "{}", print(self, root, 0))
-    }
-}
-
 type NodeId = usize;
 
 #[derive(Debug, PartialEq)]
@@ -69,22 +46,8 @@ struct Node {
     kind: Kind,
 }
 
-fn sizes(arena: &mut Arena, node_id: NodeId) -> usize {
-    let node = arena.get(node_id);
-    let node_size = node.size;
-    let children = node.children.clone();
-    let size = match node_size {
-        Some(existing_size) => existing_size,
-        None => children.iter().map(|&node_id| sizes(arena, node_id)).sum(),
-    };
-    let mut node = arena.get_mut(node_id);
-    node.size = Some(size);
-    size
-}
-
-pub fn main() {
-    let input = include_str!("./input.txt").lines().skip(1);
-    let mut nodes = Arena::new();
+fn build_tree(input: &str) -> Arena {
+    let mut arena = Arena::new();
 
     let root = Node {
         parent: None,
@@ -93,9 +56,10 @@ pub fn main() {
         size: None,
         kind: Kind::Directory,
     };
-    let mut current_node_id = nodes.push(root);
+    let mut current_node_id = arena.push(root);
 
-    for line in input {
+    let iter = input.lines().skip(1);
+    for line in iter {
         let mut tokens = line.split_whitespace();
         let first = tokens.next().expect("valid command");
         match first {
@@ -105,22 +69,20 @@ pub fn main() {
                     Some("cd") => {
                         // assume we only cd into dirs we have seen before
                         let change_dir_name = tokens.next().expect("directory name");
-
                         if change_dir_name == ".." {
-                            current_node_id = nodes
+                            current_node_id = arena
                                 .get_mut(current_node_id)
                                 .parent
                                 .expect("valid cd .. command");
                             continue;
                         }
-
-                        let current_node = nodes.get(current_node_id);
-                        let dir_node_id = nodes
+                        let current_node = arena.get(current_node_id);
+                        let dir_node_id = arena
                             .find_child(current_node, change_dir_name)
                             .expect("unknown dir");
                         current_node_id = dir_node_id;
                     }
-                    _whatever => {} // skip other commands
+                    _ => {} // skip other commands
                 }
             }
             "dir" => {
@@ -132,8 +94,8 @@ pub fn main() {
                     size: None,
                     kind: Kind::Directory,
                 };
-                let new_node_id = nodes.push(new_node);
-                let current_node = nodes.get_mut(current_node_id);
+                let new_node_id = arena.push(new_node);
+                let current_node = arena.get_mut(current_node_id);
                 current_node.children.push(new_node_id);
             }
             file_size => {
@@ -146,34 +108,62 @@ pub fn main() {
                     size: Some(file_size.parse::<usize>().expect("numeric file size")),
                     kind: Kind::File,
                 };
-                let new_node_id = nodes.push(new_node);
-                let current_node = nodes.get_mut(current_node_id);
+                let new_node_id = arena.push(new_node);
+                let current_node = arena.get_mut(current_node_id);
                 current_node.children.push(new_node_id);
             }
         }
     }
 
-    println!("{}", sizes(&mut nodes, 0));
-    println!("{}", nodes);
+    arena
+}
 
-    let small_total = nodes
+fn compute_directory_sizes(arena: &mut Arena, node_id: NodeId) -> usize {
+    let node = arena.get(node_id);
+    let node_size = node.size;
+    let children = node.children.clone();
+    let size = match node_size {
+        Some(existing_size) => existing_size,
+        None => children
+            .iter()
+            .map(|&node_id| compute_directory_sizes(arena, node_id))
+            .sum(),
+    };
+    let mut node = arena.get_mut(node_id);
+    node.size = Some(size);
+    size
+}
+
+// plan: parse input and build a tree structure, then walk the tree and compute directory sizes
+pub fn main() {
+    let input = include_str!("./input.txt");
+
+    // parse input into a tree
+    let mut arena = build_tree(input);
+
+    // compute directory sizes
+    compute_directory_sizes(&mut arena, 0);
+
+    let small_total = arena
         .nodes
         .iter()
-        .filter(|node|{ node.kind == Kind::Directory })
+        .filter(|node| node.kind == Kind::Directory)
         .map(|node| node.size.expect("computed sizes"))
         .filter(|&size| size <= 100_000)
         .sum::<usize>();
-    println!("day06a: {small_total}");
+    println!("day07a: {small_total}");
 
-    let unused_space = 70_000_000 - nodes.get(0).size.expect("already computed");
-    let free_at_least = 30_000_000 - unused_space;
-    let smallest_to_delete = nodes
+    let total_space = 70_000_000;
+    let needed_space = 30_000_000;
+    let unused_space = total_space - arena.get(0).size.expect("already computed");
+    let free_at_least = needed_space - unused_space;
+    let smallest_to_delete = arena
         .nodes
         .iter()
-        .filter(|node|{ node.kind == Kind::Directory })
+        .filter(|node| node.kind == Kind::Directory)
         .map(|node| node.size.expect("computed sizes"))
         .filter(|&size| size >= free_at_least)
         .min()
         .expect("smallest to delete exists");
-    println!("day06b: {smallest_to_delete}");
+    println!("day07b: {smallest_to_delete}");
 }
