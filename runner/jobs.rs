@@ -17,7 +17,7 @@ pub fn all() -> &'static [Job] {
         Job { proc: day10::main, name: "day10" },
         Job { proc: day11::main, name: "day11" },
         Job { proc: day12::main, name: "day12" },
-        // Job { proc: day13::main, name: "day13" },
+        Job { proc: day13::main, name: "day13" },
         // Job { proc: day14::main, name: "day14" },
         // Job { proc: day15::main, name: "day15" },
         // Job { proc: day16::main, name: "day16" },
