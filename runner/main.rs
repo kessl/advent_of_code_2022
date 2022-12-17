@@ -4,7 +4,7 @@ mod jobs;
 mod bench;
 
 fn main() {
-    run("day14");
+    run("day15");
 }
 
 fn run(name: &str) {
